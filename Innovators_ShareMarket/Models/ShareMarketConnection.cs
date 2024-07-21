@@ -305,7 +305,6 @@ namespace Innovators_ShareMarket.Models
             });
             var jsonString = JsonConvert.SerializeObject(_optionTrading);
             Database.SaveData("basedata", jsonString);
-            //File.WriteAllText(@"E:\Badhri\Projects\ShareMarket\ShareMarket\Data\basedata.json", jsonString);
 
             _updateStrikeDetails(_optionTrading, _liveDataCollection);
         }
