@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="$(SolutionDir)Shared\Services.SharedConfig" />
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="OATH.Net" Version="0.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AngelBrokeringWebSocket\AngelBrokeringWebSocket.csproj" />
+	</ItemGroup>
+
+</Project>

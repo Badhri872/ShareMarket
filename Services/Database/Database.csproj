@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+<Import Project="$(SolutionDir)Shared\Services.SharedConfig"/>
+
+	<PropertyGroup>
+		<RootNamespace>Services.Database</RootNamespace>
+	</PropertyGroup>
+
+</Project>

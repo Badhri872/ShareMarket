@@ -1,0 +1,68 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:Innovators_ShareMarket.ViewModels">
+    <DataTemplate DataType="{x:Type vm:IntraDayDataViewModel}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="100"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Row="0" Background="Black" Grid.Column="0">
+                <ComboBox ItemsSource="{Binding StrikeCollection}" Background="DimGray" Foreground="Black"
+                          SelectedItem="{Binding SelectedStrike}" Height="20" Margin="2 2 2 2"/>
+
+            </Grid>
+            <Grid Grid.Row="0" Background="Black" Grid.Column="1">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="Open"/>
+            </Grid>
+            <Grid Grid.Row="0" Background="Black" Grid.Column="2">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="High"/>
+            </Grid>
+            <Grid Grid.Row="0" Background="Black" Grid.Column="3">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="Low"/>
+            </Grid>
+            <Grid Grid.Row="0" Background="Black" Grid.Column="4">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="Close"/>
+            </Grid>
+            <Grid Grid.Row="1" Background="Black" Grid.Column="0">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="Call"/>
+            </Grid>
+            <Grid Grid.Row="1" Background="Black" Grid.Column="1">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding CallOpen}"/>
+            </Grid>
+            <Grid Grid.Row="1" Background="Black" Grid.Column="2">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding CallHigh}"/>
+            </Grid>
+            <Grid Grid.Row="1" Background="Black" Grid.Column="3">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding CallLow}"/>
+            </Grid>
+            <Grid Grid.Row="1" Background="Black" Grid.Column="4">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding CallClose}"/>
+            </Grid>
+            <Grid Grid.Row="2" Background="Black" Grid.Column="0">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="Put"/>
+            </Grid>
+            <Grid Grid.Row="2" Background="Black" Grid.Column="1">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding PutOpen}"/>
+            </Grid>
+            <Grid Grid.Row="2" Background="Black" Grid.Column="2">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding PutHigh}"/>
+            </Grid>
+            <Grid Grid.Row="2" Background="Black" Grid.Column="3">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding PutLow}"/>
+            </Grid>
+            <Grid Grid.Row="2" Background="Black" Grid.Column="4">
+                <TextBlock HorizontalAlignment="Center" Foreground="White" Text="{Binding PutClose}"/>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+</ResourceDictionary>

@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<PlatformTarget>x64</PlatformTarget>
+		<BaseOutputPath>..\#Binaries</BaseOutputPath>
+		<BaseIntermediateOutputPath />
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="morelinq" Version="4.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Services\Database\Database.csproj" />
+		<ProjectReference Include="..\Services\ServerRequest\ServerRequest.csproj" />
+		<ProjectReference Include="..\Services\WebSocket\WebSocket.csproj" />
+	</ItemGroup>
+
+</Project>
