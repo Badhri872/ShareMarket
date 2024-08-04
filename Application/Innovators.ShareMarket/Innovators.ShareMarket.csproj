@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="morelinq" Version="4.1.0" />
+	</ItemGroup>
+
+</Project>

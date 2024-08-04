@@ -1,0 +1,55 @@
+<Project>
+	<!-- Initialization of empty BuildConfigFile Variable -->
+	<PropertyGroup Label="UserMacros">
+		<BuildConfigFile />
+	</PropertyGroup>
+	
+	<!-- Initialization of SolutionDir Variable -->
+	<PropertyGroup Label="UserMacros" Condition="$(SolutionDir)==' '">
+		<SolutionDir>$(MSBuildThisFileDirectory)</SolutionDir>
+	</PropertyGroup>
+	
+	<!-- Set the build configuration file for the project -->
+	<Choose>
+		<When Condition="$(MSBuildProjectName.StartsWith('Services'))">
+			<PropertyGroup Label="UserMacros">
+				<BuildConfigFile>$(SolutionDir)\Shared\Services.SharedConfig</BuildConfigFile>
+			</PropertyGroup>
+		</When>
+		
+		<When Condition="$(MSBuildProjectName.StartsWith('Console'))">
+			<PropertyGroup Label="UserMacros">
+				<BuildConfigFile>$(SolutionDir)\Shared\Console.SharedConfig</BuildConfigFile>
+			</PropertyGroup>
+		</When>
+		
+		<When Condition="$(MSBuildProjectName.StartsWith('Innovators'))">
+			<PropertyGroup Label="UserMacros">
+				<BuildConfigFile>$(SolutionDir)\Shared\Innovators.SharedConfig</BuildConfigFile>
+			</PropertyGroup>
+		</When>
+	</Choose>
+
+	<!-- Ensure build configuration is set -->
+	<Target 
+		Name="EnsureBuildConfigSet" 
+		BeforeTargets="Build"
+		Condition="$(BuildConfigFile) == ' '">
+		<Error Text="No build configuration was set" Importance="High" />
+	</Target>
+	
+	<!-- Import the default configuration file to succeed the project if build configuration is empty-->
+	<Import 
+		Project="$(SolutionDir)\Shared\CommonConfiguration.SharedConfig"
+		Condition="$(BuildConfigFile) == ''"/>
+
+	<!-- Import the correct shared file if the build configuration is set-->
+	<Import
+		Project="$(BuildConfigFile)"
+		Condition="$(BuildConfigFile) != ' '"/>
+	
+	<!-- Print the solution directory in the output -->
+	<Target Name="PrintProperty" BeforeTargets="Build">
+		<Message Text="ThisProject Name: $(MSBuildProjectName)" Importance="High" />
+	</Target>
+</Project>

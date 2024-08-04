@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+	  <PackageReference Include="OATH.Net" Version="0.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\AngelBrokeringWebSocket\Services.AngelBrokeringWebSocket.csproj" />
+	</ItemGroup>
+
+</Project>

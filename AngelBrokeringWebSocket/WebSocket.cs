@@ -1,5 +1,4 @@
 ﻿using System.Net.WebSockets;
-using System.Text;
 using System.Text.Json;
 using Websocket.Client;
 
@@ -23,17 +22,18 @@ namespace Services.AngelWebSocket
 
             return _ws.IsStarted;
         }
-        public void ConnectforStockQuote(string feedtoken, string clientcode, string apiKey = null)
+        public void ConnectforStockQuote(string feedtoken, string clientcode, string apiKey, string authToken)
         {
             try
             {
                 if (feedtoken != "" && clientcode != "")
                 {
                     var url = new Uri(_url + "clientCode=" + clientcode + "feedToken=" + feedtoken + "apiKey=" + apiKey);
-                    _ws = new WebsocketClient(url);
+                    _ws = new WebsocketClient(url, () => 
+                                getClientWebSocket(clientcode, feedtoken, apiKey, authToken));
                     _ws.MessageReceived.Subscribe(msg => 
                         MessageReceived?.Invoke(
-                            this, new MessageEventArgs(msg.Text)));
+                            this, new MessageEventArgs(msg.Binary.GetLTPData().ToString())));
                     _ws.Start();
                     int i = 0;
                     do
@@ -49,6 +49,17 @@ namespace Services.AngelWebSocket
                 throw ex;
             }
         }
+
+        private ClientWebSocket getClientWebSocket(string clientCode, string feedToken, string apiKey, string authToken)
+        {           
+            var client = new ClientWebSocket();
+            client.Options.SetRequestHeader("Authorization", authToken);
+            client.Options.SetRequestHeader("x-api-key", apiKey);
+            client.Options.SetRequestHeader("x-client-code", clientCode);
+            client.Options.SetRequestHeader("x-feed-token", feedToken);
+            return client;
+        }
+
         public void Send(LTPRequest request)
         {
 
@@ -56,7 +67,15 @@ namespace Services.AngelWebSocket
             {
                 try
                 {
-                    var json = JsonSerializer.Serialize(request);
+                    var json = 
+                        JsonSerializer
+                        .Serialize(
+                            request,
+                            new JsonSerializerOptions
+                            {
+                                WriteIndented = true,
+                            });
+                    var send = _ws.Send(json);
                 }
                 catch (Exception ex)
                 {

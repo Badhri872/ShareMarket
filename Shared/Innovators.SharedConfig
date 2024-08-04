@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$(SolutionDir)\Shared\CommonConfiguration.SharedConfig" />
+  
+  	<PropertyGroup>		
+		<OutputType>WinExe</OutputType>
+		<UseWPF>true</UseWPF>
+	</PropertyGroup>
+  
+</Project>

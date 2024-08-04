@@ -7,10 +7,13 @@
 
     public record SymbolDetailsAngel(string symbol, string token);
     public record LTPRequest(
+        string correlationID,
         int action,
         LTPRequestParameters @params);
 
     public record LTPRequestParameters(int mode, List<ExchangeSubscriptionDetailsAngel> tokenList);
 
     public record ExchangeSubscriptionDetailsAngel(int exchangeType, List<string> tokens);
+
+    public record TokenData(string token, string symbol, string exch_seg);
 }
