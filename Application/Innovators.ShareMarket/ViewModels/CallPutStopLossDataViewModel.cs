@@ -27,6 +27,10 @@ namespace Innovators_ShareMarket.ViewModels
             IntraDayDataVM.SelectedStrikeChanged += onSelectedStrikeChanged;
             updateCallPutData(IntraDayDataVM.SelectedStrike);
         }
+        ~CallPutStopLossDataViewModel()
+        {
+            IntraDayDataVM.SelectedStrikeChanged -= onSelectedStrikeChanged;
+        }
 
         public StopLossDataViewModel Call { get; set; }
         public StopLossDataViewModel Put { get; set; }

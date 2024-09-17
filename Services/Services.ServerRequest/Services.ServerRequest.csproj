@@ -1,6 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-<Import Project="$(SolutionDir)Shared\Solution.SharedConfig"/>
-
 	<PropertyGroup>
 		<RootNamespace>Services.ServerRequest</RootNamespace>
 	</PropertyGroup>

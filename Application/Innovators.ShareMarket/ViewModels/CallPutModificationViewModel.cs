@@ -17,9 +17,15 @@ namespace Innovators_ShareMarket.ViewModels
             _addItem = add;
             AddCommand = new SimpleCommand(addItem);
             DeleteCommand = new SimpleCommand(remove);
-            var strikeCollection = new HashSet<int>(tradeDetails.StopLossDataDetails.Values.Select(x => x.Strike));
+            var strikeCollection = 
+                new HashSet<int>(
+                    tradeDetails
+                        .StopLossDataDetails
+                        .Values
+                        .Select(x => x.Strike)
+                        .OrderBy(x => x));
             StrikeCollection = new ObservableCollection<int>(strikeCollection);
-            _selectedItem = StrikeCollection[0];
+            _selectedItem = StrikeCollection[7];
         }
         public ObservableCollection<int> StrikeCollection { get; set; }
         public int SelectedStrike

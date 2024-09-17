@@ -2,10 +2,10 @@
 {
     public class MessageEventArgs : EventArgs
     {
-        public MessageEventArgs(string message) 
+        public MessageEventArgs(StrikeLTPData message) 
         {
             Message = message;
         }
-        public string Message { get; }
+        public StrikeLTPData Message { get; }
     }
 }

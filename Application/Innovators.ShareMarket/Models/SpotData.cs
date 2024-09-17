@@ -11,11 +11,17 @@ namespace Innovators_ShareMarket.Models
             Symbol = liveData.Exchange;
             liveData.LiveDataChanged += onLiveDataChanged;
         }
+        ~SpotData() 
+        {
+            _liveData.LiveDataChanged -= onLiveDataChanged;
+        }
 
         private void onLiveDataChanged(object? sender, EventArgs e)
         {
             updatePositions();
         }
+
+        public EventHandler OpenChanged, HighChanged, LowChanged, CloseChanged;
 
         public string Symbol { get; set; }
         public double Open { get; set; }
@@ -32,8 +38,18 @@ namespace Innovators_ShareMarket.Models
             else
             {
                 Close = _liveData.LastTradingPrice;
-                if (Close < Low) Low = Close;
-                if (Close > High) High = Close;
+                CloseChanged?.Invoke(this, EventArgs.Empty);
+                if (Close < Low)
+                {
+                    Low = Close;
+                    LowChanged?.Invoke(this, EventArgs.Empty);
+                }
+
+                if (Close > High)
+                {
+                    High = Close;
+                    HighChanged?.Invoke(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -43,6 +59,11 @@ namespace Innovators_ShareMarket.Models
             Close = position;
             High = position;
             Low = position;
+
+            OpenChanged?.Invoke(this, EventArgs.Empty);
+            CloseChanged?.Invoke(this, EventArgs.Empty);
+            HighChanged?.Invoke(this, EventArgs.Empty);
+            LowChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

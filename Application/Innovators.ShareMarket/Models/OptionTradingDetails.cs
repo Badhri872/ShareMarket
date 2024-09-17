@@ -1,6 +1,4 @@
-﻿using Services.WebSocket;
-
-namespace Innovators_ShareMarket.Models
+﻿namespace Innovators_ShareMarket.Models
 {
     public class OptionTradingDetails
     {

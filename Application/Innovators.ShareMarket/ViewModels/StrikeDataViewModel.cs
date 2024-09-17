@@ -51,44 +51,20 @@ namespace Innovators_ShareMarket.ViewModels
         {
             lock (_lockObject)
             {
-                /* if (!_isUnsubscribed)
-                 {
-                     if (!_isSubscribed && dateTime >= StrikeTime && dateTime < MaxStrikeTime)
-                     {
-                         CallPutCollection.ForEach(item => item.SubscribeData());
-                         _isSubscribed = true;
-                         _canSave = true;
-                         IsExpanded = true;
-                         Application.Current.Dispatcher.Invoke(()
-                         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded))));
-                     }
-                     else if (_isSubscribed)
-                     {
-                         CallPutCollection.ForEach(item => item.UnSubscribeData());
-                         _isUnsubscribed = true;
-                     }
-                     else
-                     {
-                         _isUnsubscribed = true;
-                     }
-                 }
-                 else if (_canSave)
-                 {
-                     CallPutCollection[0].SaveData(StrikeTime);
-                     _canSave = false;
-                 }*/
                 if (dateTime >= StrikeTime && dateTime < MaxStrikeTime)
                 {
                     CallPutCollection.ForEach(item => item.SubscribeData());
                     _isSubscribed = true;
                     IsExpanded = true;
-                    Application.Current.Dispatcher.Invoke(()
+                    Application.Current?.Dispatcher.Invoke(()
                     => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded))));
                 }
                 else if (_isSubscribed)
                 {
                     CallPutCollection.ForEach(item => item.UnSubscribeData());
                     CallPutCollection[0].SaveData(StrikeTime);
+                    _isSubscribed = false;
+                    IsExpanded = false;
                 }
 
             }

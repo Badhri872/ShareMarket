@@ -15,5 +15,5 @@
 
     public record ExchangeSubscriptionDetailsAngel(int exchangeType, List<string> tokens);
 
-    public record TokenData(string token, string symbol, string exch_seg);
+    public record TokenData(string Token, string Symbol, string Strike, string Exch_Seg);
 }

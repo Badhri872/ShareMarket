@@ -5,7 +5,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\AngelBrokeringWebSocket\Services.AngelBrokeringWebSocket.csproj" />
+	  <ProjectReference Include="..\..\Services\Services.AngelBrokeringWebSocket\Services.AngelBrokeringWebSocket.csproj" />
 	</ItemGroup>
 
 </Project>

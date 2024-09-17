@@ -4,6 +4,23 @@
     {
         private double _lastTradingPrice;
 
+        public LiveData() { }
+        public LiveData(string strike, string token) 
+        {
+            if (strike.ToLower().Contains("call"))
+            {
+                Option = OptionType.Call;
+                Strike = int.Parse(strike.Substring(4));
+                Token = int.Parse(token);
+            }
+            else
+            {
+                Option = OptionType.Put;
+                Strike = int.Parse(strike.Substring(3));
+                Token = int.Parse(token);
+            }
+        }
+
         public double LastTradingPrice
         {
             get 

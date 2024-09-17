@@ -2,6 +2,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="morelinq" Version="4.1.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="OATH.Net" Version="0.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Services\Services.AngelBrokeringWebSocket\Services.AngelBrokeringWebSocket.csproj" />
+	  <ProjectReference Include="..\..\Services\Services.JsonDatabase\Services.JsonDatabase.csproj" />
+	  <ProjectReference Include="..\..\Services\Services.ServerRequest\Services.ServerRequest.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -23,10 +23,15 @@ namespace Innovators_ShareMarket.ViewModels
             _liveDataCollection = liveDataCollection;
             _fifteenMinutesDataCollection = new List<FifteenMinutesData>();
 
-            var strikes = new HashSet<int>(optionTradingDetails.StopLossDataDetails.Values
-                                            .Select(item => item.Strike));
+            var strikes =
+                new HashSet<int>(
+                    optionTradingDetails
+                        .StopLossDataDetails
+                        .Values
+                        .Select(item => item.Strike)
+                        .OrderBy(x => x));
             StrikeCollection = new ObservableCollection<int>(strikes);
-            SelectedStrike = StrikeCollection[0];
+            SelectedStrike = StrikeCollection[7];
             //subscribeLiveData();
             updateLiveDataPositions();
             updateStrikes();
@@ -49,8 +54,14 @@ namespace Innovators_ShareMarket.ViewModels
                        int selectedStrike)
         {
             _liveDataCollection = liveDataCollection;
-            var strikes = new HashSet<int>(optionTradingDetails.StopLossDataDetails.Values
-                                            .Select(item => item.Strike));
+            _fifteenMinutesDataCollection = new List<FifteenMinutesData>();
+            var strikes = 
+                new HashSet<int>(
+                    optionTradingDetails
+                        .StopLossDataDetails
+                        .Values
+                        .Select(item => item.Strike)
+                        .OrderBy(x => x));
             StrikeCollection = new ObservableCollection<int>(strikes);
             SelectedStrike = selectedStrike;
             updateLiveDataPositions();
@@ -66,6 +77,11 @@ namespace Innovators_ShareMarket.ViewModels
             PutLow = _put.Low;
             PutClose = _put.Close;
             PutStrike = _put.Option.ToString();
+        }
+
+        ~IntraDayDataViewModel()
+        {
+            unSubscribe();
         }
 
         public double CallOpen { get => _call.Open; set => _call.Open = value; }
@@ -125,7 +141,10 @@ namespace Innovators_ShareMarket.ViewModels
             string time = strikeTime.ToShortTimeString().Replace(":", "_").Replace(" ", "");
             if (!_isDataSaved && _fifteenMinutesDataCollection.Any())
             {
-                var jsonString = JsonConvert.SerializeObject(_fifteenMinutesDataCollection);
+                var jsonString = 
+                    JsonConvert.SerializeObject(
+                        _fifteenMinutesDataCollection,
+                        Formatting.Indented);
                 Database.SaveData(time, jsonString);
                 _isDataSaved = true;
             }
@@ -137,10 +156,10 @@ namespace Innovators_ShareMarket.ViewModels
                                         => item.Strike == e.Strike && item.Option == e.Option);
             changedLiveData.Close = e.LTP;
 
-            if (changedLiveData.Strike == SelectedStrike)
-            {
-                notifyPropertyChange();
-            }
+            //if (changedLiveData.Strike == SelectedStrike)
+            //{
+            //    notifyPropertyChange();
+            //}
         }
 
         private void updateLiveDataPositions()
@@ -164,18 +183,83 @@ namespace Innovators_ShareMarket.ViewModels
         {
             if (_fifteenMinutesDataCollection.Count > 0)
             {
+                unSubscribe();
 
                 _call = _fifteenMinutesDataCollection.First(data
                                             => data.Strike == SelectedStrike && data.Option == OptionType.Call);
                 _put = _fifteenMinutesDataCollection.First(data
                                             => data.Strike == SelectedStrike && data.Option == OptionType.Put);
-                notifyPropertyChange();
+                subscribe();
             }
         }
 
+        private void subscribe()
+        {
+            if(_call is not null)
+            {
+                _call.OpenData += onCallOpen;
+                _call.HighData += onCallHigh;
+                _call.LowData += onCallLow;
+                _call.CloseData += onCallClose;
+            }
+
+            if(_put is not null)
+            {
+
+                _put.OpenData += onPutOpen;
+                _put.HighData += onPutHigh;
+                _put.LowData += onPutLow;
+                _put.CloseData += onPutClose;
+            }
+        }
+
+        private void unSubscribe()
+        {
+            if (_call is not null)
+            {
+                _call.OpenData -= onCallOpen;
+                _call.HighData -= onCallHigh;
+                _call.LowData -= onCallLow;
+                _call.CloseData -= onCallClose;
+            }
+
+            if (_put is not null)
+            {
+                _put.OpenData -= onPutOpen;
+                _put.HighData -= onPutHigh;
+                _put.LowData -= onPutLow;
+                _put.CloseData -= onPutClose;
+            }
+        }
+
+        private void onCallClose(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(CallClose)));
+
+        private void onCallLow(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(CallLow)));
+
+        private void onCallHigh(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(CallHigh)));
+
+        private void onCallOpen(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(CallOpen)));
+
+        private void onPutClose(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(PutClose)));
+
+        private void onPutLow(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(PutLow)));
+
+        private void onPutHigh(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(PutHigh)));
+
+        private void onPutOpen(object? sender, EventArgs e) =>
+            PropertyChanged?.Invoke(this, new(nameof(PutOpen)));
+        
+
         private void notifyPropertyChange()
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CallOpen)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CallHigh)));

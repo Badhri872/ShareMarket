@@ -6,6 +6,7 @@ namespace Innovators_ShareMarket.Models
     public class FifteenMinutesData
     {
         private double _close;
+        public EventHandler OpenData, HighData, LowData, CloseData;
 
         [JsonProperty]
         public int Strike { get; set; }
@@ -25,6 +26,7 @@ namespace Innovators_ShareMarket.Models
                 if (value != 0)
                 {
                     _close = value;
+                    CloseData?.Invoke(this, EventArgs.Empty);
                     updatePositions();
                 }
             }
@@ -42,8 +44,16 @@ namespace Innovators_ShareMarket.Models
             }
             else
             {
-                if (Close < Low && Close != 0) Low = Close;
-                if (Close > High && Close != 0) High = Close;
+                if (Close < Low && Close != 0)
+                {
+                    Low = Close;
+                    LowData?.Invoke(this, EventArgs.Empty);
+                }
+                if (Close > High && Close != 0)
+                {
+                    High = Close;
+                    HighData?.Invoke(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -52,6 +62,10 @@ namespace Innovators_ShareMarket.Models
             Open = position;
             High = position;
             Low = position;
+
+            OpenData?.Invoke(this, EventArgs.Empty);
+            LowData?.Invoke(this, EventArgs.Empty);
+            HighData?.Invoke(this, EventArgs.Empty);
         }
     }
 }

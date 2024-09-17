@@ -33,7 +33,8 @@ namespace Services.AngelWebSocket
                                 getClientWebSocket(clientcode, feedtoken, apiKey, authToken));
                     _ws.MessageReceived.Subscribe(msg => 
                         MessageReceived?.Invoke(
-                            this, new MessageEventArgs(msg.Binary.GetLTPData().ToString())));
+                            this, 
+                            new MessageEventArgs(msg.Binary.GetLTPData())));
                     _ws.Start();
                     int i = 0;
                     do

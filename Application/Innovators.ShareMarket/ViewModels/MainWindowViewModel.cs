@@ -1,6 +1,7 @@
 ﻿using Innovators_ShareMarket.Models;
 using Innovators_ShareMarket.Views;
 using MoreLinq;
+using Services.Database;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
@@ -21,13 +22,27 @@ namespace Innovators_ShareMarket.ViewModels
                                 updateStrikeDetails, 
                                 _contractExpiryView,
                                 displayData);
-            StartConnection = new SimpleCommand(_connection.StartSocketConnection);
-            SaveShareMarketDetails = new SimpleCommand(_connection.GetAndSaveShareMarketDetails);
-            _contractExpiryView.ShowAndUpdateStrikeData(() =>
+            StartConnection = 
+                new SimpleCommand(
+                    _connection.StartSocketConnection);
+            SaveShareMarketDetails = 
+                new SimpleCommand(
+                    _connection.GetAndSaveShareMarketDetails);
+
+            if (Database.Present("basedata"))
             {
-                _connection.GetAndSaveShareMarketDetails();
-                _contractExpiryView.Close();
-            });
+                var json = Database.ReadJson("basedata");
+                _connection.GetAndSaveShareMarketDetails(json); 
+            }
+            else
+            {
+
+                _contractExpiryView.ShowAndUpdateStrikeData(() =>
+                {
+                    _connection.GetAndSaveShareMarketDetails();
+                    _contractExpiryView.Close();
+                });
+            }
         }
 
         public ICommand StartConnection { get; }

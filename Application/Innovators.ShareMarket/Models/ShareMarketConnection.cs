@@ -1,33 +1,31 @@
 ﻿using Innovators_ShareMarket.Views;
 using Newtonsoft.Json;
+using Services.AngelWebSocket;
 using Services.Database;
 using Services.ServerRequest;
-using Services.WebSocket;
-using Services.WebSocket.Records;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics;
-using System.IO;
-using System.Timers;
+using OathNet;
+using System.Globalization;
+using MoreLinq;
 
 namespace Innovators_ShareMarket.Models
 {
     public class ShareMarketConnection
     {
-        private const string CONTRACTMASTER = "https://v2api.aliceblueonline.com/restpy/contract_master?exch={EXCHANGE}";
-        private const string APIKEY = "RzN6qDharOE9Ang24i35TLdKE8E9jVaWUrcW926fxzNzbWC5KUbljCpr1NuaCgNaQmZUCM62MtkFsSzvb7Fzez8gqxrtpmjAnIVVspSnpeDPVL6AqZ65z6XEAe7cfVg0"; //Environment.GetEnvironmentVariable("apiKey");
-        private const string USERID = "1008015";
-        private AliceBlue _aliceBlue;
-        private Ticker _ticker;
+        private const string CONTRACTMASTER = 
+            "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json";
+        private const string APIKEY = "lr4liHKm";
+        private const string USERID = "A1208575";
+        private const string Password = "3005";
         private string _cachedTokenFile = $"cached_token_{DateTime.Now.ToString("dd_mmm_yyyy")}.txt";
         private OptionTradingDetails _optionTrading;
         private readonly List<LiveData> _liveDataCollection;
-        private readonly HttpRequestService _httpService;
         private readonly Action<OptionTradingDetails, List<LiveData>> _updateStrikeDetails;
         private readonly Action<DateTime> _displayData;
         private readonly ContractExpiryView _contractExpiry;
-        private readonly List<Ticker> _tickerCollection;
-        System.Timers.Timer _timer;
+        private readonly SmartApi _smartApi;
+        private readonly WebSocket _webSocket;
+        private int _increment = 0;
 
         public ShareMarketConnection(
                 Action<OptionTradingDetails, List<LiveData>> updateStrikeDetails,
@@ -38,216 +36,98 @@ namespace Innovators_ShareMarket.Models
             _displayData = displayData;
             _contractExpiry = contractExpiry;
             _liveDataCollection = new List<LiveData>();
-            _httpService = new HttpRequestService();
-            _tickerCollection = new List<Ticker>();
-
-            _timer = new System.Timers.Timer();
-            _timer.Elapsed += _onTimerTick;
-            _timer.Interval = 5000;
+            _smartApi = new SmartApi(APIKEY);
+            _webSocket = new WebSocket();
+            _optionTrading = new OptionTradingDetails();
         }
 
-        private void _onTimerTick(object? sender, ElapsedEventArgs e)
+        ~ShareMarketConnection()
         {
-            _ticker.ReconnectTicker();
+            if (_webSocket != null)
+            {
+                _webSocket.MessageReceived -= writeResult;
+                _webSocket.Close();
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public void StartSocketConnection()
         {
-            try
-            {
-                _aliceBlue = new AliceBlue(USERID, APIKEY, enableLogging: true,
-                    onAccessTokenGenerated: (accessToken) =>
-                    {
+            // Get totp
+            var base32SecretKey = "SOQFEBU7TRR3YJUXDFIF7WESJU";
+            var tOtp = new TimeBasedOtpGenerator(new Key(base32SecretKey), 6);
+            var currentOTP = tOtp.GenerateOtp(DateTime.Now);
 
-                        File.WriteAllText(_cachedTokenFile, accessToken);
-                    }, cachedAccessTokenProvider: () =>
-                    {
-                        return File.Exists(_cachedTokenFile) ? File.ReadAllText(_cachedTokenFile) : null;
-                    });
+            // Login the angel broker
+            var session = 
+                _smartApi.GenerateSession(
+                    USERID, 
+                    Password, 
+                    currentOTP);
+            var token = session.TokenResponse;
 
-                Task.Run(() =>
-                {
-                    _ticker.Close();
-                    /*var tickerCollection = new List<Ticker>();
-                    int i = 0;
-                    while (i < 8)
-                    {
-                        tickerCollection.Add(_aliceBlue.CreateTicker());
-                        i++;
-                    }
-                    return tickerCollection;*/
-                    return _aliceBlue.CreateTicker();
-                })
-                    .ContinueWith(t =>
-                    {
-                        _ticker = t.Result;
-                        // Setup event handlers
-                        _ticker.OnTick += ticker_OnTick;
-                        _ticker.OnConnect += ticker_OnConnect;
-                        _ticker.OnClose += ticker_OnClose;
-                        _ticker.OnError += ticker_OnError;
-                        _ticker.OnNoReconnect += ticker_OnNoReconnect;
-                        _ticker.OnReconnect += ticker_OnReconnect;
-                        _ticker.OnReady += ticker_OnReady;
+            // Generate and get the token
+            session = _smartApi.GenerateToken();
+            token = session.TokenResponse;
 
-                        _ticker.EnableReconnect();
-
-                        _ticker.Connect();
-                        _timer.Start();
-
-                        /*_tickerCollection.AddRange(t.Result);
-                        // Setup event handlers
-                        _tickerCollection.ForEach(ticker =>
-                        {
-                            ticker.OnTick += ticker_OnTick;
-                            ticker.OnConnect += ticker_OnConnect;
-                            ticker.OnClose += ticker_OnClose;
-                            ticker.OnError += ticker_OnError;
-                            ticker.OnNoReconnect += ticker_OnNoReconnect;
-                            ticker.OnReconnect += ticker_OnReconnect;
-                            ticker.OnReady += ticker_OnReady;
-
-                            ticker.EnableReconnect();
-
-                            ticker.Connect();
-                        });*/
-                    });
-
-            }
-            catch (Exception ex)
-            {
-                //Console.WriteLine(ex.Message);
-            }
-
-            Console.ReadLine();
+            _webSocket.ConnectforStockQuote(
+                token.feedToken, 
+                USERID, 
+                APIKEY, 
+                token.jwtToken);
+            var ltpReq =
+                new LTPRequest(
+                    correlationID: "sampleSubscription",
+                    action: 1,
+                    new LTPRequestParameters(
+                        mode: 1,
+                        tokenList: 
+                            new List<ExchangeSubscriptionDetailsAngel>
+                                {
+                                    new ExchangeSubscriptionDetailsAngel(
+                                        exchangeType: 2,
+                                        tokens:
+                                            _optionTrading
+                                                .StrikeTokenDetails
+                                                .Values
+                                                .ToList()),
+                                    new ExchangeSubscriptionDetailsAngel(
+                                        exchangeType: 1,
+                                        tokens: new List<string>
+                                        {
+                                            _optionTrading
+                                                .NiftyToken,
+                                            _optionTrading
+                                                .FuturesToken,
+                                        }),
+                                }));
+            _webSocket.MessageReceived += writeResult;
+            _webSocket.Send(ltpReq);
         }
 
         public async void GetAndSaveShareMarketDetails()
         {
-            var nseDetails = await _httpService.GetMasterContracts<NSEDetails>(CONTRACTMASTER.Replace("{EXCHANGE}", "NSE"));
-            var nfoDetails = await _httpService.GetMasterContracts<NFODetails>(CONTRACTMASTER.Replace("{EXCHANGE}", "NFO"));
-            var contractDetails = await _httpService.GetMasterContractDetails<StrikeData>("https://alagu-chandran.github.io/nifty/NIFTY.json");
-            createAndSaveJson(nseDetails, nfoDetails, contractDetails);
+            var masterData = 
+                await HttpRequestService
+                    .GetMasterContracts<List<TokenData>>(
+                        CONTRACTMASTER);
+            
+            var contractDetails = 
+                await HttpRequestService
+                    .GetMasterContracts<NiftyStrikeData>(
+                        "https://alagu-chandran.github.io/nifty/NIFTY.json");
+            createAndSaveJson(masterData, contractDetails);
         }
 
-        private void ticker_OnReady()
+        public void GetAndSaveShareMarketDetails(string baseData)
         {
-            var spotSubscriptionList = new SubscriptionToken[2];
-            spotSubscriptionList[0] = new SubscriptionToken
-            {
-                Token = int.Parse(_optionTrading.NiftyToken),
-                Exchange = Constants.EXCHANGE_INDICES,
-            };
-            spotSubscriptionList[1] = new SubscriptionToken
-            {
-                Token = int.Parse(_optionTrading.FuturesToken),
-                Exchange = Constants.EXCHANGE_NFO,
-            };
+            _optionTrading =
+                JsonConvert.DeserializeObject<OptionTradingDetails>(baseData) ?? 
+                new OptionTradingDetails();
+            _liveDataCollection.Clear();
 
-            var subscriptionList = _optionTrading.StrikeTokenDetails.Values.ToList().Select(
-                token => new SubscriptionToken
-                {
-                    Token = int.Parse(token),
-                    Exchange = Constants.EXCHANGE_NFO,
-                }).Concat(spotSubscriptionList).ToArray();
-            _ticker.Subscribe(Constants.TICK_MODE_FULL,
-                subscriptionList);
-            /*var subscriptionList = _optionTrading.StrikeTokenDetails.Values.ToList().Select(
-                token => new SubscriptionToken
-                {
-                    Token = int.Parse(token),
-                    Exchange = Constants.EXCHANGE_NFO,
-                }).ToArray();
-            int tickerCount = 0;
-            for (int i = 0; i < subscriptionList.Length; i += 5)
-            {
-                _tickerCollection[tickerCount].Subscribe(
-                    Constants.TICK_MODE_FULL,
-                    new SubscriptionToken[]
-                    {
-                        subscriptionList[i],
-                        subscriptionList[i + 1]
-                    });
-                tickerCount++;
-            }
-
-            subscriptionList = new SubscriptionToken[2];
-            subscriptionList[0] = new SubscriptionToken
-            {
-                Token = int.Parse(_optionTrading.NiftyToken),
-                Exchange = Constants.EXCHANGE_INDICES,
-            };
-            subscriptionList[1] = new SubscriptionToken
-            {
-                Token = int.Parse(_optionTrading.FuturesToken),
-                Exchange = Constants.EXCHANGE_NFO,
-            };
-
-            _tickerCollection[tickerCount].Subscribe(Constants.TICK_MODE_FULL,
-                subscriptionList);*/
-
-        }
-
-        private async void ticker_OnTick(Tick TickData)
-        {
-            Debug.WriteLine(TickData.FeedTime.ToString());
-            await Task.Run(() =>
-            {
-                _displayData(TickData.FeedTime.Value);
-                _liveDataCollection.ForEach(item =>
-                {
-                    if (item.Token == TickData.Token)
-                    {
-                        item.DateTime = TickData.FeedTime.Value;
-                        item.LastTradingPrice = double.Parse(TickData.LastTradedPrice.ToString());
-                    }
-                });
-            });
-        }
-
-        private void ticker_OnReconnect()
-        {
-            //Console.WriteLine("Ticker reconnecting.");
-        }
-
-        private void ticker_OnNoReconnect()
-        {
-            //Console.WriteLine("Ticker not reconnected.");
-        }
-
-        private void ticker_OnError(string Message)
-        {
-            //Console.WriteLine("Ticker error." + Message);
-        }
-
-        private void ticker_OnClose()
-        {
-            //Console.WriteLine("Ticker closed.");
-        }
-
-        private void ticker_OnConnect()
-        {
-            //Console.WriteLine("Ticker connected.");
-        }
-
-        private void createAndSaveJson(
-                        NSEDetails nseDetails,
-                        NFODetails nfoDetails,
-                        List<StrikeData> contractDetails)
-        {
-
-            _optionTrading = new OptionTradingDetails();
-
-            var contractExpiryDate = _contractExpiry.SelectedDate.GetValueOrDefault();
-            _optionTrading.NiftyToken = nseDetails.NSE.FirstOrDefault(item =>
-                                            item.Symbol.Contains("NIFTY 50")).InstrumentToken;
-            _optionTrading.FuturesToken = nfoDetails.NFO.FirstOrDefault(item
-                                                    => item.InstrumentType == "FUTIDX" &&
-                                                       item.Symbol == "NIFTY" &&
-                                                       item.FormattedInstrumentName.Contains(contractExpiryDate.ToString("MMM").ToUpper()))
-                                            .InstrumentToken;
+            // Adding Nifty and Futures live data.
             _liveDataCollection.Add(new LiveData
             {
                 Exchange = "Nifty",
@@ -258,45 +138,107 @@ namespace Innovators_ShareMarket.Models
                 Exchange = "Futures",
                 Token = int.Parse(_optionTrading.FuturesToken),
             });
-            var nfoContracts = nfoDetails.NFO.Where(item => item.Symbol == "NIFTY" &&
-                                                            item.GetTradeExpiry().Date.Day == contractExpiryDate.Day &&
-                                                            item.GetTradeExpiry().Date.Month == contractExpiryDate.Month).ToList();
+
+            //Add Strike Details
+            _optionTrading.StrikeTokenDetails.ForEach(
+                strike => _liveDataCollection.Add(
+                    new LiveData(strike.Key, strike.Value)));
+
+            _updateStrikeDetails(_optionTrading, _liveDataCollection);
+
+        }
+
+        private async void writeResult(
+            object? sender, 
+            MessageEventArgs e)
+        {
+            await Task.Run(() =>
+            {
+                _displayData(e.Message.ExchangeTimestamp);
+                _liveDataCollection.ForEach(item =>
+                {
+                    if (item.Token == int.Parse(e.Message.Token))
+                    {
+                        item.DateTime = e.Message.ExchangeTimestamp;
+                        item.LastTradingPrice = double.Parse(e.Message.LTP.ToString());
+                    }
+                });
+            });
+        }
+
+        private void createAndSaveJson(
+                        List<TokenData> masterData,
+                        NiftyStrikeData contractDetails)
+        {
+
+            _optionTrading = new OptionTradingDetails();
+
+            var contractExpiryDate = 
+                _contractExpiry.SelectedDate.GetValueOrDefault();
+            _optionTrading.NiftyToken =
+                masterData.FirstOrDefault(item =>
+                    item.Symbol.Contains("Nifty 50"))
+                .Token;
+            _optionTrading.FuturesToken =
+                masterData.FirstOrDefault(item =>
+                    item.Symbol.Contains("NIFTYFUTURESMIDMONTH"))
+                .Token;
+            _liveDataCollection.Add(new LiveData
+            {
+                Exchange = "Nifty",
+                Token = int.Parse(_optionTrading.NiftyToken),
+            });
+            _liveDataCollection.Add(new LiveData
+            {
+                Exchange = "Futures",
+                Token = int.Parse(_optionTrading.FuturesToken),
+            });
+            var nfoContracts = masterData.Where(item => 
+                item.Symbol.Contains("NIFTY" +
+                contractExpiryDate.Day.ToString() +
+                contractExpiryDate
+                    .ToString("MMM", CultureInfo.InvariantCulture)
+                    .ToUpper() +
+                contractExpiryDate.ToString("yy")))
+            .ToList();
             nfoContracts.ForEach(item =>
             {
-                var strikePrice = (int)Math.Round(double.Parse(item.StrikePrice));
+                var strikePrice = 
+                    (int)Math.Round(double.Parse(item.Strike)) / 100;
                 if (strikePrice <= _contractExpiry.InitialStrike + 350 &&
                     strikePrice >= _contractExpiry.InitialStrike - 350)
                 {
                     string strike = string.Empty;
-                    if (item.OptionType == "CE")
+                    if (item.Symbol.Contains("CE"))
                     {
-                        strike = "Call" + item.StrikePrice;
+                        strike = "Call" + strikePrice;
                     }
                     else
                     {
-                        strike = "Put" + item.StrikePrice;
+                        strike = "Put" + strikePrice;
                     }
 
-                    var token = item.InstrumentToken;
+                    var token = item.Token;
                     _optionTrading.StrikeTokenDetails.Add(strike, token);
                 }
             });
-            var tokenStrikes = _optionTrading.StrikeTokenDetails.Keys.ToList();
+            var tokenStrikes = 
+                _optionTrading.StrikeTokenDetails.Keys.ToList();
 
-            contractDetails.ForEach(item =>
+            contractDetails.Active.ForEach(item =>
             {
                 if (tokenStrikes.Contains(item.OptionType + item.StrikePrice))
                 {
                     _optionTrading.StopLossDataDetails.Add(item.OptionType + item.StrikePrice,
                             new StopLossData
                             {
-                                Strike = int.Parse(item.StrikePrice),
+                                Strike = int.Parse(item.StrikePrice.ToString()),
                                 OptionType = (OptionType)Enum.Parse(typeof(OptionType), item.OptionType),
-                                PreviousClose = double.Parse(item.PreviousClose),
+                                PreviousClose = item.PrevClose,
                             });
                     _liveDataCollection.Add(new LiveData
                     {
-                        Strike = int.Parse(item.StrikePrice),
+                        Strike = int.Parse(item.StrikePrice.ToString()),
                         Option = (OptionType)Enum.Parse(typeof(OptionType), item.OptionType),
                         Token = int.Parse(_optionTrading
                                             .StrikeTokenDetails[item.OptionType + item.StrikePrice]),
